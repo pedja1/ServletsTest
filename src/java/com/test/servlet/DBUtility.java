@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 
@@ -113,7 +114,6 @@ public class DBUtility
     public boolean insertUser(User user) throws ServletException
     {
         PreparedStatement ps = null;
-        ResultSet rs = null;
         try
         {
             ps = conn.prepareStatement("insert into user(first_name, last_name, email, password) values (?,?,?,?)");
@@ -126,14 +126,48 @@ public class DBUtility
         }
         catch (SQLException e)
         {
-            //if we get error user probably exists
-            return false;
+            e.printStackTrace();
+            logger.error("Database connection problem");
+            throw new ServletException("DB Connection problem.");
         }
         finally
         {
             try
             {
-                if (rs != null)rs.close();
+                if(ps != null)ps.close();
+            }
+            catch (SQLException e)
+            {
+                logger.error("SQLException in closing PreparedStatement or ResultSet");
+            }
+        }
+    }
+    
+    public void insertUsersInTx(List<User> users) throws ServletException
+    {
+        PreparedStatement ps = null;
+        try
+        {
+            conn.setAutoCommit(false);
+            for(User user : users)
+            {
+                ps = conn.prepareStatement("insert into user(first_name, last_name, email, password) values (?,?,?,?)");
+                ps.setString(1, user.getFirstName());
+                ps.setString(2, user.getLastname());
+                ps.setString(3, user.getEmail());
+                ps.setString(4, user.getPassword());
+                ps.executeUpdate();
+            }
+            conn.commit();
+        }
+        catch (SQLException e)
+        {
+            //if we get error user probably exists
+        }
+        finally
+        {
+            try
+            {
                 if(ps != null)ps.close();
             }
             catch (SQLException e)

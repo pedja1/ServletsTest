@@ -8,6 +8,8 @@ package com.test.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -23,7 +25,7 @@ public class MainServlet extends HttpServlet
 
     private static final long serialVersionUID = 1L;
 
-    static Logger logger = Logger.getLogger(RegisterController.class);
+    static Logger logger = Logger.getLogger(MainServlet.class);
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -66,6 +68,19 @@ public class MainServlet extends HttpServlet
                 writer.print(Utility.generalErrorMessage(ResponseCode.command_not_found.toString(), String.format("No such command '%s'", command)));
                 break;
         }
+        
+        /*DBUtility db = new DBUtility(this);
+        List<User> users = new ArrayList<>();
+        for(int i = 0; i < 1000000; i++)
+        {
+            User user = new User();
+            user.setEmail("email" + i + "@gmail.com");
+            user.setFirstName("Name" + i);
+            user.setLastname("Last Name" + i);
+            user.setPassword("password" + i);
+            users.add(user);
+        }
+        db.insertUsersInTx(users);*/
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
