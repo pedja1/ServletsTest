@@ -11,9 +11,11 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import org.apache.log4j.Logger;
 
 /**
@@ -23,6 +25,7 @@ import org.apache.log4j.Logger;
 public class MainServlet extends HttpServlet
 {
 
+    private int userId;
     private static final long serialVersionUID = 1L;
 
     static Logger logger = Logger.getLogger(MainServlet.class);
@@ -53,19 +56,29 @@ public class MainServlet extends HttpServlet
         }
         catch(Exception e)
         {
-            cmd = Command.no_command;
+            writer.print(Utility.generalErrorMessage(ResponseCode.command_not_found.toString(), String.format("No such command '%s'", command)));
+            return;
+        }
+        if(cmdRequiresSession(cmd))
+        {
+            userId = checkSession(request);
+            if(userId == -1)
+            {
+                writer.print(Utility.generalErrorMessage(ResponseCode.not_authorized.toString(), "You are not authorized to perform this action!"));
+                return;
+            }
         }
         
         switch(cmd)
         {
             case login:
-                new LoginController(this, request.getParameterMap()).setResponse(response);
+                new LoginController(this, request.getParameterMap()).setResponse(request, response);
                 break;
             case register:
-                new RegisterController(this, request.getParameterMap()).setResponse(response);
+                new RegisterController(this, request.getParameterMap()).setResponse(request, response);
                 break;
-            default:
-                writer.print(Utility.generalErrorMessage(ResponseCode.command_not_found.toString(), String.format("No such command '%s'", command)));
+            case sync:
+                new SyncController(this, request.getParameterMap()).setResponse(request, response);
                 break;
         }
         
@@ -82,7 +95,50 @@ public class MainServlet extends HttpServlet
         }
         db.insertUsersInTx(users);*/
     }
+    
+    
+    /**
+     * @return -1 if session is invalid, user_id if session is valid
+     */
+    private int checkSession(HttpServletRequest request) throws ServletException
+    {
+        HttpSession session = request.getSession(false);
+        if(session == null)//no session check cookies
+        {
+            Cookie[] cookies = request.getCookies();
+            if(cookies != null)for(Cookie cookie : cookies)
+            {
+                if(cookie.getName().equals("auth_key"))
+                {
+                    DBUtility db = new DBUtility(this);
+                    int userId = db.getUserIdFromSession(cookie.getValue());
+                    if(userId != -1)
+                    {
+                        session = request.getSession();
+                        session.setAttribute("user_id", userId);
+                        return userId;
+                    }
+                    return -1;//found cookie but auth_key is invalid return -1
+                }
+            }
+            return -1;//we dont have session
+        }
+        else//we have session, get user_id from it
+        {
+            return (int) session.getAttribute("user_id");
+        }
+    }
+    
+    private boolean cmdRequiresSession(Command cmd)
+    {
+        return cmd != Command.login && cmd != Command.register;
+    }
 
+    public int getUserId()
+    {
+        return userId;
+    }
+    
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
      * Handles the HTTP <code>GET</code> method.
@@ -122,5 +178,6 @@ public class MainServlet extends HttpServlet
     {
         return "api";
     }// </editor-fold>
+
 
 }

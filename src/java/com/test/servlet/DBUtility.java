@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -54,8 +55,14 @@ public class DBUtility
         {
             try
             {
-                if (rs != null)rs.close();
-                if(ps != null)ps.close();
+                if (rs != null)
+                {
+                    rs.close();
+                }
+                if (ps != null)
+                {
+                    ps.close();
+                }
             }
             catch (SQLException e)
             {
@@ -90,8 +97,14 @@ public class DBUtility
         {
             try
             {
-                if (rs != null)rs.close();
-                if(ps != null)ps.close();
+                if (rs != null)
+                {
+                    rs.close();
+                }
+                if (ps != null)
+                {
+                    ps.close();
+                }
             }
             catch (SQLException e)
             {
@@ -110,7 +123,7 @@ public class DBUtility
         user.setLastname(rs.getString("last_name"));
         return user;
     }
-    
+
     public boolean insertUser(User user) throws ServletException
     {
         PreparedStatement ps = null;
@@ -134,7 +147,10 @@ public class DBUtility
         {
             try
             {
-                if(ps != null)ps.close();
+                if (ps != null)
+                {
+                    ps.close();
+                }
             }
             catch (SQLException e)
             {
@@ -142,14 +158,14 @@ public class DBUtility
             }
         }
     }
-    
+
     public void insertUsersInTx(List<User> users) throws ServletException
     {
         PreparedStatement ps = null;
         try
         {
             conn.setAutoCommit(false);
-            for(User user : users)
+            for (User user : users)
             {
                 ps = conn.prepareStatement("insert into user(first_name, last_name, email, password) values (?,?,?,?)");
                 ps.setString(1, user.getFirstName());
@@ -168,7 +184,10 @@ public class DBUtility
         {
             try
             {
-                if(ps != null)ps.close();
+                if (ps != null)
+                {
+                    ps.close();
+                }
             }
             catch (SQLException e)
             {
@@ -176,11 +195,10 @@ public class DBUtility
             }
         }
     }
-    
+
     public void updateUser(int id, String column, String value) throws ServletException
     {
         PreparedStatement ps = null;
-        ResultSet rs = null;
         try
         {
             ps = conn.prepareStatement(String.format("UPDATE user SET %s = ? WHERE id = ?", column));
@@ -198,8 +216,10 @@ public class DBUtility
         {
             try
             {
-                if (rs != null)rs.close();
-                if(ps != null)ps.close();
+                if (ps != null)
+                {
+                    ps.close();
+                }
             }
             catch (SQLException e)
             {
@@ -208,4 +228,199 @@ public class DBUtility
         }
     }
 
+    public List<String> getUsersItems(int userId) throws ServletException
+    {
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try
+        {
+            List<String> items = new ArrayList<>();
+            ps = conn.prepareStatement(String.format("SELECT item_id FROM items WHERE user_id = ?"));
+            ps.setInt(1, userId);
+            rs = ps.executeQuery();
+            if (rs != null)
+            {
+                while (rs.next())
+                {
+                    items.add(rs.getString("item_id"));
+                }
+            }
+            return items;
+        }
+        catch (SQLException e)
+        {
+            e.printStackTrace();
+            logger.error("Database connection problem");
+            throw new ServletException("DB Connection problem.");
+        }
+        finally
+        {
+            try
+            {
+                if (rs != null)
+                {
+                    rs.close();
+                }
+                if (ps != null)
+                {
+                    ps.close();
+                }
+            }
+            catch (SQLException e)
+            {
+                logger.error("SQLException in closing PreparedStatement or ResultSet");
+            }
+        }
+    }
+
+    public int getUserIdFromSession(String authKey) throws ServletException
+    {
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try
+        {
+            ps = conn.prepareStatement(String.format("SELECT user_id FROM session WHERE auth_key = ? LIMIT 1"));
+            ps.setString(1, authKey);
+            rs = ps.executeQuery();
+            if (rs != null && rs.next())
+            {
+                return rs.getInt("user_id");
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        catch (SQLException e)
+        {
+            e.printStackTrace();
+            logger.error("Database connection problem");
+            throw new ServletException("DB Connection problem.");
+        }
+        finally
+        {
+            try
+            {
+                if (ps != null)
+                {
+                    ps.close();
+                }
+                if (rs != null)
+                {
+                    rs.close();
+                }
+            }
+            catch (SQLException e)
+            {
+                logger.error("SQLException in closing PreparedStatement or ResultSet");
+            }
+        }
+    }
+
+    public boolean insertSession(String authKey, int userId) throws ServletException
+    {
+        PreparedStatement ps = null;
+        try
+        {
+            ps = conn.prepareStatement("insert into session(auth_key, user_id) values (?,?)");
+            ps.setString(1, authKey);
+            ps.setInt(2, userId);
+            ps.execute();
+            return true;
+        }
+        catch (SQLException e)
+        {
+            e.printStackTrace();
+            logger.error("Database connection problem");
+            throw new ServletException("DB Connection problem.");
+        }
+        finally
+        {
+            try
+            {
+                if (ps != null)
+                {
+                    ps.close();
+                }
+            }
+            catch (SQLException e)
+            {
+                logger.error("SQLException in closing PreparedStatement or ResultSet");
+            }
+        }
+    }
+
+    public void insertItemsInTx(String[] items, int userId) throws ServletException
+    {
+        PreparedStatement ps = null;
+        try
+        {
+            conn.setAutoCommit(false);
+            for (String item : items)
+            {
+                ps = conn.prepareStatement("insert into items(item_id, user_id) values (?,?)");
+                ps.setString(1, item);
+                ps.setInt(2, userId);
+                ps.executeUpdate();
+            }
+            conn.commit();
+        }
+        catch (SQLException e)
+        {
+            e.printStackTrace();
+            logger.error("Database connection problem");
+            throw new ServletException("DB Connection problem.");
+        }
+        finally
+        {
+            try
+            {
+                if (ps != null)
+                {
+                    ps.close();
+                }
+            }
+            catch (SQLException e)
+            {
+                logger.error("SQLException in closing PreparedStatement or ResultSet");
+            }
+        }
+    }
+    
+    public void deleteItemsInTx(String[] items, int userId) throws ServletException
+    {
+        PreparedStatement ps = null;
+        try
+        {
+            conn.setAutoCommit(false);
+            for (String item : items)
+            {
+                ps = conn.prepareStatement("DELETE FROM items WHERE user_id = ? AND item_id = ?");
+                ps.setString(2, item);
+                ps.setInt(1, userId);
+                ps.executeUpdate();
+            }
+            conn.commit();
+        }
+        catch (SQLException e)
+        {
+            e.printStackTrace();
+            logger.error("Database connection problem");
+            throw new ServletException("DB Connection problem.");
+        }
+        finally
+        {
+            try
+            {
+                if (ps != null)
+                {
+                    ps.close();
+                }
+            }
+            catch (SQLException e)
+            {
+                logger.error("SQLException in closing PreparedStatement or ResultSet");
+            }
+        }
+    }
 }

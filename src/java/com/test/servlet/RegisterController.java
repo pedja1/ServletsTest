@@ -33,13 +33,13 @@ import org.json.JSONObject;
 public class RegisterController extends Controller
 {
 
-    public RegisterController(HttpServlet servlet, Map<String, String[]> requestParams)
+    public RegisterController(MainServlet servlet, Map<String, String[]> requestParams)
     {
         super(servlet, requestParams);
     }
 
     @Override
-    public void setResponse(HttpServletResponse response) throws ServletException, IOException
+    public void setResponse(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         PrintWriter writer = response.getWriter();
         String email = getParam(RequestParam.email.toString());

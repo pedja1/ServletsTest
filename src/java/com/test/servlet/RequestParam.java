@@ -12,5 +12,23 @@ package com.test.servlet;
  */
 public enum RequestParam
 {
-    email, password, cmd, first_name, last_name
+    email, password, cmd, first_name, last_name, add("add[]"), delete("delete[]"),
+    action;
+    
+    String mValue;
+    RequestParam()
+    {
+        
+    }
+    
+    RequestParam(String value)
+    {
+        mValue = value;
+    }
+
+    @Override
+    public String toString()
+    {
+        return mValue == null ? super.toString() : mValue;
+    }
 }

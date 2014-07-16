@@ -11,24 +11,24 @@ package com.test.servlet;
  */
 import java.io.IOException;
 import java.io.PrintWriter;
-
 import java.util.Map;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import org.json.JSONObject;
 
 public class LoginController extends Controller
 {
-
-    public LoginController(HttpServlet servlet, Map<String, String[]> requestParams)
+    public LoginController(MainServlet servlet, Map<String, String[]> requestParams)
     {
         super(servlet, requestParams);
     }
 
     @Override
-    public void setResponse(HttpServletResponse response) throws ServletException, IOException
+    public void setResponse(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         PrintWriter writer = response.getWriter();
         String email = getParam(RequestParam.email.toString());
@@ -48,30 +48,26 @@ public class LoginController extends Controller
         User user = dbUtil.getUser(email, password);
         if (user != null)
         {
-            logger.info("User found with details=" + user);
-
+            HttpSession session = request.getSession();
+            session.setAttribute("user_id", user.getId());
             String sessionKey = SessionGenerator.getInstance().nextSessionId();
             Cookie cookie = new Cookie("auth_key", sessionKey);
             cookie.setMaxAge(Constants.COOKIE_AGE);
             response.addCookie(cookie);
             
-            dbUtil.updateUser(user.getId(), "auth_key", sessionKey);
+            dbUtil.insertSession(sessionKey, user.getId());
             
-            JSONObject jReponse = new JSONObject();
-            jReponse.put(JSONKey.status.toString(), 0);
-            jReponse.put(JSONKey.user_info.toString(), user.toJSONObject());
+            JSONObject jResponse = new JSONObject();
+            jResponse.put(JSONKey.status.toString(), 0);
+            //jResponse.put(JSONKey.auth_key.toString(), sessionKey);
+            jResponse.put(JSONKey.user_info.toString(), user.toJSONObject());
 
-            writer.print(jReponse.toString());
+            writer.print(jResponse.toString());
         }
         else
         {
             writer.print(Utility.generalErrorMessage(ResponseCode.email_doesnt_exist.toString(), "Email address not found"));
         }
-    }
-    
-    public void saveUsersAuthKey(String authKey)
-    {
-        
     }
 
 }

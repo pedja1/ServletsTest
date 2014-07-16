@@ -12,5 +12,5 @@ package com.test.servlet;
  */
 public enum Command
 {
-    no_command, login, register
+    no_command, login, register, sync
 }

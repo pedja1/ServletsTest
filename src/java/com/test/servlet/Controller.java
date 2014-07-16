@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -26,10 +27,10 @@ public abstract class Controller
 
     static Logger logger = Logger.getLogger(Controller.class);
     
-    HttpServlet servlet;
+    MainServlet servlet;
     protected final Map<String, String[]> requestParams = new HashMap<>();
 
-    public Controller(HttpServlet servlet, Map<String, String[]> requestParams)
+    public Controller(MainServlet servlet, Map<String, String[]> requestParams)
     {
         this.servlet = servlet;
         if(requestParams != null)
@@ -48,5 +49,10 @@ public abstract class Controller
         return param[0];
     }
     
-    public abstract void setResponse(HttpServletResponse response) throws ServletException, IOException;
+    protected boolean hasParam(String key)
+    {
+        return requestParams.containsKey(key);
+    }
+    
+    public abstract void setResponse(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException;
 }
